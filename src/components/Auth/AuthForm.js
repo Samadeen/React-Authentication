@@ -18,11 +18,14 @@ const AuthForm = () => {
     setIsLogin((prevState) => !prevState);
   };
 
-  const submitHandler = (e) => {
-    e.preventDefault();
+  const submitHandler = (event) => {
+    event.preventDefault();
 
     const enteredEmail = emailInputRef.current.value;
     const enteredPassword = passwordInputRef.current.value;
+
+    // optional: Add validation
+
     setIsLoading(true);
     let url;
     if (isLogin) {
@@ -44,21 +47,25 @@ const AuthForm = () => {
       },
     })
       .then((res) => {
-        setIsLoading(true);
+        setIsLoading(false);
         if (res.ok) {
           return res.json();
         } else {
           return res.json().then((data) => {
-            let errorMessage = 'Authentication failed';
-            if (data && data.error && data.error.message) {
-              errorMessage = data.error.message;
-            }
+            let errorMessage = 'Authentication failed!';
+            // if (data && data.error && data.error.message) {
+            //   errorMessage = data.error.message;
+            // }
+
             throw new Error(errorMessage);
           });
         }
       })
       .then((data) => {
-        authCtx.login(data.idToken);
+        const expirationTime = new Date(
+          new Date().getTime() + +data.expiresIn * 1000
+        );
+        authCtx.login(data.idToken, expirationTime.toISOString());
         history.replace('/');
       })
       .catch((err) => {
@@ -87,8 +94,7 @@ const AuthForm = () => {
           {!isLoading && (
             <button>{isLogin ? 'Login' : 'Create Account'}</button>
           )}
-          {isLoading && <p>Sending Request...</p>}
-
+          {isLoading && <p>Sending request...</p>}
           <button
             type='button'
             className={classes.toggle}
